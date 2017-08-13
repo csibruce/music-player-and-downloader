@@ -1,12 +1,16 @@
 <html>
   <head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab" rel="stylesheet">
     <style>
-      #listBox, #musicBox, #playlist { display: inline-block; border: 1px solid black; padding: 10px; }
+      body { font-family: 'Roboto Slab', serif; background-color: black; color: #35DE08; }
+      a { color: #35DE08; }
+      #listBox, #musicBox, #playlist { display: inline-block; border: 1px solid #35DE08; padding: 10px; }
+      .title { font-size: 30px; font-weight: bold; padding: 15px 0; }
       .item { cusour: pointer; }
       .item:hover { background-color: blue; color: white; }
       .listened { text-decoration: line-through; color: grey; }
       .nowPlaying { color: blue; }
-      .button { display: inline; background-color: black; color: white; padding: 5px; margin-left: 10px; }
+      .button { display: inline; color: white; padding: 5px; margin-right: 10px; border: 2px solid #35DE08; }
       .button:hover { background-color: blue; color: white; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
@@ -23,7 +27,7 @@
           playListBox.innerHTML = '';
           _.each(response.reservedSongs, (song, idx) => {
             var item = document.createElement('div');
-            item.innerHTML = song;
+            item.innerHTML = `${idx + 1}. ${song}`;
 
             if (idx < response.nowPlayingIndex) item.setAttribute('class', 'listened');
             if (idx == response.nowPlayingIndex) item.setAttribute('class', 'nowPlaying');
@@ -86,11 +90,11 @@
           var response = JSON.parse(request.response);
           var playListBox = document.getElementById('playlist');
           var volumeStatus = document.querySelector('.volume');
-          volumeStatus.innerText = response.volume + 'dB';
+          volumeStatus.innerText = 'vol: ' +response.volume + 'dB';
           playListBox.innerHTML = '';
           _.each(response.reservedSongs, (song, idx) => {
             var item = document.createElement('div');
-            item.innerHTML = song;
+            item.innerHTML = `${idx + 1}. ${song}`;
             if (idx < response.nowPlayingIndex) item.setAttribute('class', 'listened')
             if (idx == response.nowPlayingIndex) item.setAttribute('class', 'nowPlaying');
             playListBox.appendChild(item);
@@ -106,16 +110,16 @@
     </script>
   </head>
   <body>
-    <div>song list</div>
+    <div class="title">song list(for download)</div>
     <div id="listBox"></div>
-    <div>click song you wanna listen</div>
+    <div class="title">click song you wanna listen</div>
     <div id="musicBox"></div>
-    <div>play list</div>
+    <div class="title">play list</div>
     <div id="playlist"></div>
     <br /><br />
-    <div class="button" onclick="controllPlayer()">다음곡>></div>
-    <div class="button" onclick="controllPlayer('+')">볼륨UP</div>
-    <div class="button" onclick="controllPlayer('-')">볼륨DOWN</div>
+    <div class="button" onclick="controllPlayer()">NEXT</div>
+    <div class="button" onclick="controllPlayer('+')">UP</div>
+    <div class="button" onclick="controllPlayer('-')">DOWN</div>
     <div class="button volume">vol</div>
   </body>
 </html>

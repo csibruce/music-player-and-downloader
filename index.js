@@ -37,6 +37,10 @@ app.get('/download/:song', (req, res) => {
   res.download(file); // Set disposition and send it.
 });
 
+app.get('/search/:keyword', (req, res) => {
+  res.json(player.list());
+});
+
 app.listen(3000, function () {
   console.log('app listening on port 3000!');
 });
