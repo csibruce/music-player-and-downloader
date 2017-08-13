@@ -26,7 +26,7 @@
             item.innerHTML = song;
 
             if (idx < response.nowPlayingIndex) item.setAttribute('class', 'listened');
-            if (idx == response.nowPlayingIndex -1) item.setAttribute('class', 'nowPlaying');
+            if (idx == response.nowPlayingIndex) item.setAttribute('class', 'nowPlaying');
             playListBox.appendChild(item);
           })
           alert('added');
@@ -41,6 +41,7 @@
         request.open("get", "/controll/" + (command || 'q'), true);
         request.onreadystatechange = function () {
           if (request.readyState != 4 || request.status != 200) return;
+          getPlayList();
         }
         request.send();
       }
@@ -84,12 +85,14 @@
           if (request.readyState != 4 || request.status != 200) return;
           var response = JSON.parse(request.response);
           var playListBox = document.getElementById('playlist');
+          var volumeStatus = document.querySelector('.volume');
+          volumeStatus.innerText = response.volume + 'dB';
           playListBox.innerHTML = '';
           _.each(response.reservedSongs, (song, idx) => {
             var item = document.createElement('div');
             item.innerHTML = song;
             if (idx < response.nowPlayingIndex) item.setAttribute('class', 'listened')
-            if (idx == response.nowPlayingIndex -1) item.setAttribute('class', 'nowPlaying');
+            if (idx == response.nowPlayingIndex) item.setAttribute('class', 'nowPlaying');
             playListBox.appendChild(item);
           })
         };
@@ -113,6 +116,6 @@
     <div class="button" onclick="controllPlayer()">다음곡>></div>
     <div class="button" onclick="controllPlayer('+')">볼륨UP</div>
     <div class="button" onclick="controllPlayer('-')">볼륨DOWN</div>
-    <div class="button" onclick="controllPlayer('z')">status</div>
+    <div class="button volume">vol</div>
   </body>
 </html>
