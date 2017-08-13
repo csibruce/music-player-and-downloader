@@ -1,0 +1,118 @@
+<html>
+  <head>
+    <style>
+      #listBox, #musicBox, #playlist { display: inline-block; border: 1px solid black; padding: 10px; }
+      .item { cusour: pointer; }
+      .item:hover { background-color: blue; color: white; }
+      .listened { text-decoration: line-through; color: grey; }
+      .nowPlaying { color: blue; }
+      .button { display: inline; background-color: black; color: white; padding: 5px; margin-left: 10px; }
+      .button:hover { background-color: blue; color: white; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+    <script>
+      function listenSong(name) {
+        return function () {
+        var request = new XMLHttpRequest();
+        request.open("get", "/listen_song/" + name, true);
+        request.setRequestHeader('Accept', 'application/json, text/javascript');
+        request.onreadystatechange = function () {
+          if (request.readyState != 4 || request.status != 200) return;
+          var response = JSON.parse(request.response);
+          var playListBox = document.getElementById('playlist');
+          playListBox.innerHTML = '';
+          _.each(response.reservedSongs, (song, idx) => {
+            var item = document.createElement('div');
+            item.innerHTML = song;
+
+            if (idx < response.nowPlayingIndex) item.setAttribute('class', 'listened');
+            if (idx == response.nowPlayingIndex -1) item.setAttribute('class', 'nowPlaying');
+            playListBox.appendChild(item);
+          })
+          alert('added');
+        }
+        request.send();
+        }
+      }
+
+      function controllPlayer(command) {
+        console.log('clicked');
+        var request = new XMLHttpRequest();
+        request.open("get", "/controll/" + (command || 'q'), true);
+        request.onreadystatechange = function () {
+          if (request.readyState != 4 || request.status != 200) return;
+        }
+        request.send();
+      }
+
+      function getSongs() {
+        var request = new XMLHttpRequest();
+        request.open("get", "/get_list", true);
+        request.onreadystatechange = function () {
+        if (request.readyState != 4 || request.status != 200) return;
+          var songs = JSON.parse(request.response);
+          console.log(songs);
+          var listBox = document.getElementById("listBox");
+          var musicBox = document.getElementById("musicBox");
+
+          for(var i = 0; i < songs.length; i++) {
+            console.log(songs[i])
+            var item = document.createElement('div');
+            var aTag = document.createElement('a');
+
+            var itemForListen = document.createElement('div');
+
+            item.setAttribute('class', 'item');
+            itemForListen.setAttribute('class', 'item');
+            itemForListen.innerHTML = songs[i];
+            itemForListen.onclick = listenSong(songs[i]);
+            aTag.innerHTML = songs[i];
+            aTag.href = '/download/' + songs[i];
+            item.appendChild(aTag);
+            listBox.appendChild(item);
+            musicBox.appendChild(itemForListen);
+          };
+
+        };
+        request.send();
+      }
+
+      function getPlayList() {
+        var request = new XMLHttpRequest();
+        request.open("get", "/get_play_list", true);
+        request.onreadystatechange = function () {
+          if (request.readyState != 4 || request.status != 200) return;
+          var response = JSON.parse(request.response);
+          var playListBox = document.getElementById('playlist');
+          playListBox.innerHTML = '';
+          _.each(response.reservedSongs, (song, idx) => {
+            var item = document.createElement('div');
+            item.innerHTML = song;
+            if (idx < response.nowPlayingIndex) item.setAttribute('class', 'listened')
+            if (idx == response.nowPlayingIndex -1) item.setAttribute('class', 'nowPlaying');
+            playListBox.appendChild(item);
+          })
+        };
+        request.send();
+      }
+
+      getSongs();
+      getPlayList();
+
+      setInterval(function() { getPlayList(); }, 3000);
+    </script>
+  </head>
+  <body>
+    <div>song list</div>
+    <div id="listBox"></div>
+    <div>click song you wanna listen</div>
+    <div id="musicBox"></div>
+    <div>play list</div>
+    <div id="playlist"></div>
+    <br /><br />
+    <div class="button" onclick="controllPlayer()">다음곡>></div>
+    <div class="button" onclick="controllPlayer('+')">볼륨UP</div>
+    <div class="button" onclick="controllPlayer('-')">볼륨DOWN</div>
+    <div class="button" onclick="controllPlayer('z')">status</div>
+  </body>
+</html>
