@@ -4,14 +4,22 @@
     <style>
       body { font-family: 'Roboto Slab', serif; background-color: black; color: #35DE08; }
       a { color: #35DE08; }
-      #listBox, #musicBox, #playlist { display: inline-block; border: 1px solid #35DE08; padding: 10px; }
-      .title { font-size: 30px; font-weight: bold; padding: 15px 0; }
+      input[type="text"] { width: 350px; border: 1px solid #35DE08; background-color: inherit; color: #35DE08; padding: 10px; }
+      #listBox, #musicBox, #playlist, #resultBox { display: inline-block; border: 1px solid #35DE08; padding: 10px; }
+      .title { font-size: 30px; font-weight: bold; padding: 15px 0 5px; }
       .item { cusour: pointer; }
-      .item:hover { background-color: blue; color: white; }
+      .item:hover { background-color: blue; color: white; cursor: pointer; }
       .listened { text-decoration: line-through; color: grey; }
       .nowPlaying { color: blue; }
-      .button { display: inline; color: white; padding: 5px; margin-right: 10px; border: 2px solid #35DE08; }
+      .button { display: inline; color: black; background-color: #35DE08; padding: 5px; margin-right: 10px; border: 1px solid #35DE08; cursor: pointer; font-weight: bold; }
       .button:hover { background-color: blue; color: white; }
+      .search-item-box { cursor: pointer; width: 400px; height: 80px; position: relative; border: 1px solid #35DE08; margin-bottom: 10px; }
+      .search-item-box:hover { background-color: #35DE08; color: black; }
+      .search-item-box:last-child { margin-bottom: 0; }
+      .search-item-image { display: inline-block; width: 100px; }
+      .search-item-title { position: absolute; top: 50%; transform: translateY(-50%); width: 280px; margin-left: 110px;}
+      .loading { position: absolute; height: 100vh; left: 0; right: 0; background-color: red; z-index: 100; display: none; }
+      .loading-gif { position: absolute; transform: translate(50%,-50%); top: 50%; right: 50%; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
     <script>
@@ -90,7 +98,9 @@
           var response = JSON.parse(request.response);
           var playListBox = document.getElementById('playlist');
           var volumeStatus = document.querySelector('.volume');
+          var rotateStatus = document.querySelector('.rotate');
           volumeStatus.innerText = 'vol: ' +response.volume + 'dB';
+          rotateStatus.innerText = 'rotate: ' +response.rotate;
           playListBox.innerHTML = '';
           _.each(response.reservedSongs, (song, idx) => {
             var item = document.createElement('div');
@@ -103,6 +113,85 @@
         request.send();
       }
 
+      function searchVideo() {
+        var keyword = document.querySelector('input[name="keyword"]').value;
+        if (!keyword) {
+          alert('search keyword is empty!')
+          return;
+        }
+        var request = new XMLHttpRequest();
+        request.open("get", "/search/" + keyword, true);
+        request.onreadystatechange = function () {
+          if (request.readyState != 4 || request.status != 200) return;
+          var result = JSON.parse(request.response);
+          var items = result.items;
+          console.log(items);
+          var resultBox = document.querySelector('#resultBox');
+          resultBox.innerHTML = '';
+          _.each(items, (item) => {
+            var itemBox = document.createElement('div');
+            var img = document.createElement('img');
+            var title = document.createElement('div');
+
+            img.src = item.snippet.thumbnails.default.url;
+            title.innerText = item.snippet.title;
+            itemBox.setAttribute('class', 'search-item-box');
+            img.setAttribute('class', 'search-item-image');
+            title.setAttribute('class', 'search-item-title');
+            console.log(item.id.videoId);
+            var regExp = /[\{\}\[\]\/?.,;:|\)*~`!^\_+<>@\#$%&\\\=\(\'\"]/gi;
+            var titleWithSpace = item.snippet.title.replace(regExp, "");
+
+            itemBox.onclick = applySong(item.id.videoId, titleWithSpace.replace(/ /g, '_'));
+            itemBox.appendChild(img);
+            itemBox.appendChild(title);
+            resultBox.appendChild(itemBox);
+          });
+        };
+        request.send();
+      }
+
+      function applySong(id, name) {
+        return function() {
+          if (!confirm('will you download and apply to server?\n takes for a moment..')) return;
+          var loadingElement = document.querySelector('.loading');
+          loadingElement.style.display = 'block';
+          var request = new XMLHttpRequest();
+          request.open("get", `/apply_song/${id}/${name}`, true);
+          request.onreadystatechange = function () {
+            loadingElement.style.display = 'none';
+            if (request.readyState != 4 || request.status != 200) return;
+            var resultBox = document.querySelector('#resultBox');
+            var searchInput = document.querySelector('input[name="keyword"]');
+            searchInput.value = '';
+            resultBox.innerHTML = '';
+            getSongs();
+            getPlayList();
+          };
+          request.send();
+        }
+      }
+
+      function resetPlayList() {
+        if (!confirm('do you wanna reset playlist?')) return;
+        var request = new XMLHttpRequest();
+        request.open("get", '/reset', true);
+        request.onreadystatechange = function () {
+          if (request.readyState != 4 || request.status != 200) return;
+        };
+        request.send();
+      }
+
+      function setRotate() {
+        var request = new XMLHttpRequest();
+        request.open("get", '/rotate', true);
+        request.onreadystatechange = function () {
+          if (request.readyState != 4 || request.status != 200) return;
+          getPlayList();
+        };
+        request.send();
+      }
+
       getSongs();
       getPlayList();
 
@@ -110,16 +199,31 @@
     </script>
   </head>
   <body>
-    <div class="title">song list(for download)</div>
-    <div id="listBox"></div>
-    <div class="title">click song you wanna listen</div>
-    <div id="musicBox"></div>
-    <div class="title">play list</div>
-    <div id="playlist"></div>
-    <br /><br />
-    <div class="button" onclick="controllPlayer()">NEXT</div>
-    <div class="button" onclick="controllPlayer('+')">UP</div>
-    <div class="button" onclick="controllPlayer('-')">DOWN</div>
-    <div class="button volume">vol</div>
+    <div class="loading">
+      <img class="loading-gif" src="https://thumbs.gfycat.com/PlayfulValidAzurevase-max-1mb.gif" alt="">
+    </div>
+    <div style="display: inline-block;">
+      <div class="title">song list(for download)</div>
+      <div id="listBox"></div>
+      <div class="title">click song you wanna listen</div>
+      <div id="musicBox"></div>
+      <div class="title">play list</div>
+      <div id="playlist"></div>
+      <br /><br />
+      <div class="button" onclick="controllPlayer()">NEXT</div>
+      <div class="button" onclick="controllPlayer('+')">UP</div>
+      <div class="button" onclick="controllPlayer('-')">DOWN</div>
+      <div class="button volume">vol</div>
+      <div class="button" onclick="resetPlayList()">RESET</div>
+      <div class="button rotate" onclick="setRotate()">ROTATE</div>
+    </div>
+    <div style="display: inline-block; vertical-align: top; ">
+      <div class="title">search</div>
+      <div>
+        <input type="text" placeholder="search.." name="keyword" value="">
+        <div onclick="searchVideo()" class="button">search</div>
+      </div>
+      <div id="resultBox" style="margin-top: 10px;"></div>
+    </div>
   </body>
 </html>

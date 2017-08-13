@@ -2,12 +2,15 @@ const { spawn } = require('child_process');
 var player;
 var reservedSongs = [];
 var nowPlayingIndex = 0;
-var rotate = true;
+var rotate = false;
 var volume = -9;
 
 function play(name) {
-  player = spawn('omxplayer', [__dirname + '/songs/' + name]);
-  volume = -9;
+  if (!name) {
+    player = null;
+    return;
+  }
+  player = spawn('omxplayer', ['--vol', `${volume * 100}` , __dirname + '/songs/' + name]);
   player.stdout.on('data', function(data) {
     console.log('=========================stdout');
     console.log(data.toString());
@@ -64,6 +67,18 @@ playSong.list = () => {
     rotate: rotate,
     volume: volume,
   }
+}
+
+playSong.reset = () => {
+  console.log(player);
+  reservedSongs = [];
+  nowPlayingIndex = 0;
+  rotate = false;
+  volume = -9;
+}
+
+playSong.toggleRotate = () => {
+  rotate = !rotate;
 }
 
 module.exports = playSong;
